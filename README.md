@@ -27,7 +27,7 @@ It does not check for self collision or collision with environment, because that
 
 ## Configuration
 
-A yaml configuration file is required to load the settings for your robot. See config/hrp2jsknt_stability.yaml
+A yaml configuration file is required to load the settings for your robot. See [config/hrp2jsknt_stability.yaml](https://github.com/davetcoleman/moveit_humanoid_stability/blob/hydro-devel/config/hrp2jsknt_stability.yaml)
 
 ## Limitations / Future Work
 
