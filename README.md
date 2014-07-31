@@ -12,6 +12,10 @@ Developed by [Dave Coleman](http://dav.ee) and Shintaro Noda at JSK, University 
 
 <img align="right" src="https://raw.github.com/davetcoleman/moveit_humanoid_stability/hydro-devel/resources/screenshot.png" />
 
+## Install
+
+Making this work on your machine will be fairly complicated until a long list of pending MoveIt! pull requests are accepted. See Dave Coleman for more details.
+
 ## Usage and Explanation
 
 ### Balance Constraint Validator
