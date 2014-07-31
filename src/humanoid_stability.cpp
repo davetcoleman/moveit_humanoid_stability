@@ -98,36 +98,47 @@ HumanoidStability::HumanoidStability(bool verbose, const moveit::core::RobotStat
     ROS_ERROR_STREAM_NAMED("temp","No visual_tools passed in when in verbose mode, turning off verbose");
     verbose_ = false;
   }
-
-  // Show box
-  if (visual_tools_ && verbose_)
-  {
-    displayBoundingBox();
-  }
 }
 
-bool HumanoidStability::isValid(robot_state::RobotState &robot_state)
+bool HumanoidStability::isValid(const robot_state::RobotState &robot_state, bool verbose)
 {
+  //verbose_ = verbose; // TODO - this should be enabled so we obey the planner
+
+  // Publish state
+  if (verbose_)
+  {
+    visual_tools_->publishRobotState(robot_state);
+    ros::Duration(0.25).sleep();
+  }
+
   // Check torso
   if (!isApproximateValidBase(robot_state))
   {
+    if (verbose_)
+      ROS_WARN_STREAM_NAMED("temp","Invalid because of approximate base location");
     return false;
   }
 
   // Check COM
   if (!isApproximateValidFoot(robot_state))
   {
+    if (verbose_)
+      ROS_WARN_STREAM_NAMED("temp","Invalid because of approximate foot location");
     return false;
   }
 
   // Check COM
   if (!isValidCOM(robot_state))
   {
+    if (verbose_)
+      ROS_WARN_STREAM_NAMED("temp","Invalid because of COM");
     return false;
   }
+
+  return true;
 }
 
-bool HumanoidStability::isApproximateValidBase(robot_state::RobotState &robot_state)
+bool HumanoidStability::isApproximateValidBase(const robot_state::RobotState &robot_state)
 {
   // Check if vjoint (torso) is within reasonable limits
   const robot_model::JointModel *vjoint = robot_state.getJointModel("virtual_joint"); // TODO unhard code
@@ -154,13 +165,12 @@ bool HumanoidStability::isApproximateValidBase(robot_state::RobotState &robot_st
       vjoint_positions[2] < min_z_ + robot_state.getFakeBaseTransform().translation().z() ||
       vjoint_positions[2] > max_z_ + robot_state.getFakeBaseTransform().translation().z() )
   {
-    ROS_WARN_STREAM_NAMED("temp","Invalid because of approximate base location");
     return false;
   }
   return true;
 }
 
-bool HumanoidStability::isApproximateValidFoot(robot_state::RobotState &robot_state)
+bool HumanoidStability::isApproximateValidFoot(const robot_state::RobotState &robot_state)
 {
   const robot_model::LinkModel  *rfoot  = robot_state.getRobotModel()->getLinkModel("RLEG_LINK5"); // TODO move
 
@@ -170,7 +180,7 @@ bool HumanoidStability::isApproximateValidFoot(robot_state::RobotState &robot_st
   return true;
 }
 
-bool HumanoidStability::isValidCOM(robot_state::RobotState &robot_state)
+bool HumanoidStability::isValidCOM(const robot_state::RobotState &robot_state)
 {
   // Copy robot state to map
   for (std::size_t i = 0; i < robot_joint_group_->getVariableCount(); ++i)
@@ -181,8 +191,10 @@ bool HumanoidStability::isValidCOM(robot_state::RobotState &robot_state)
 
   bool stable = test_stability_.isPoseStable(joint_positions_map_, support_mode_, normal_vector_);
 
+  bool show_com_makers = false;
+
   // Publish COM marker
-  if (verbose_ )
+  if (verbose_ && show_com_makers)
   {
     visualization_msgs::Marker com_marker = test_stability_.getCOMMarker();
     // Translate to world frame
@@ -197,7 +209,7 @@ bool HumanoidStability::isValidCOM(robot_state::RobotState &robot_state)
   }
 
   // Publish footprint polygon
-  if (verbose_)
+  if (verbose_ && show_com_makers)
   {
     const geometry_msgs::PolygonStamped polygon_msg = test_stability_.getSupportPolygon();
 
@@ -208,7 +220,6 @@ bool HumanoidStability::isValidCOM(robot_state::RobotState &robot_state)
       Eigen::Affine3d temp_pose = moveit_visual_tools::VisualTools::convertPoint32ToPose(polygon_msg.polygon.points[i]);
 
       //temp_pose.translation().z() = temp_pose.translation().z() - 0.1;
-      robot_state.update(true);
       //robot_state.printTransform(robot_state.getGlobalLinkTransform("BODY"));
       temp_pose = temp_pose * robot_state.getGlobalLinkTransform("BODY");
 
@@ -251,8 +262,6 @@ void HumanoidStability::printVirtualJointExtremes() const
   std::cout << "  max_y: " << max_y_ << std::endl;
   std::cout << "  min_z: " << min_z_ << std::endl;
   std::cout << "  max_z: " << max_z_ << std::endl;
-
-  displayBoundingBox();
 }
 
 } // end namespace

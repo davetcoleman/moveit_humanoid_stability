@@ -93,32 +93,42 @@ public:
   ~HumanoidStability() {};
 
   /**
+   * \brief Helper for setting a planning scene state validator function
+   * \return boost function pointer for use in PlanningScene
+   */
+  planning_scene::StateFeasibilityFn getStateFeasibilityFn()
+  {
+    return boost::bind(&HumanoidStability::isValid, this, _1, _2);
+  }
+
+  /**
    * \brief Check if a robot state is stable/balanced based on all checks including heuristics
+   *        NOTE: this function can be used as a planning_scene StateFeasibilityFn
    * \param robot_state - input state to check
    * \return true if stable
    */
-  bool isValid(robot_state::RobotState &robot_state);
+  bool isValid(const robot_state::RobotState &robot_state, bool verbose);
 
   /**
    * \brief Run quick/low-cost virtual joint bounding box test on state to see if vjoint is within rough bounds
    * \param robot_state - input state to check
    * \return true if within bounds
    */
-  bool isApproximateValidBase(robot_state::RobotState &robot_state);
+  bool isApproximateValidBase(const robot_state::RobotState &robot_state);
 
   /**
    * \brief Run quick/low-cost other leg test to see if its above the z 0 value, e.g. above ground
    * \param robot_state - input state to check
    * \return true if within bounds
    */
-  bool isApproximateValidFoot(robot_state::RobotState &robot_state);
+  bool isApproximateValidFoot(const robot_state::RobotState &robot_state);
 
   /**
    * \brief Run HRL kinematics COM calculation
    * \param robot_state - input state to check
    * \return true if stable
    */
-  bool isValidCOM(robot_state::RobotState &robot_state);
+  bool isValidCOM(const robot_state::RobotState &robot_state);
 
   /**
    * \brief Debug function for showing the course-grain constraint enforcement of torso
