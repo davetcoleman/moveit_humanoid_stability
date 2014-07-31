@@ -46,34 +46,52 @@ HumanoidStability::HumanoidStability(bool verbose, const moveit::core::RobotStat
   : verbose_(verbose)
   , visual_tools_(visual_tools)
   , normal_vector_(0.0, 0.0, 1.0)
-  , support_mode_(hrl_kinematics::Kinematics::SUPPORT_SINGLE_LEFT) // TODO choose smartly
 {
+  // Configurations
+  static const std::string ROOT_NAME = "humanoid_stability";
+
   normal_vector_.normalize(); // TODO is this necessary?
 
-  ROS_INFO_STREAM_NAMED("stability","HumanoidStability Ready.");
+  ros::NodeHandle nh("~");
+
+  // Temporary vars for loading from param server
+  double bounding_box_padding;
+  std::string left_foot_name = "left_foot";
+  std::string right_foot_name = "right_foot";
+  std::string all_joints_group = "robot_joints";
 
   // Load the torso (vjoint) bounds from yaml file
-  ros::NodeHandle nh("~");
-  static const std::string group_name = "hrp2jsknt_torso"; // TODO remove name
-  nh.param(group_name + "/min_x", min_x_, 0.0);
-  nh.param(group_name + "/max_x", max_x_, 0.0);
-  nh.param(group_name + "/min_y", min_y_, 0.0);
-  nh.param(group_name + "/max_y", max_y_, 0.0);
-  nh.param(group_name + "/min_z", min_z_, 0.0);
-  nh.param(group_name + "/max_z", max_z_, 0.0);
+  nh.param(ROOT_NAME + "/bounding_box/min_x", min_x_, 0.0);
+  nh.param(ROOT_NAME + "/bounding_box/max_x", max_x_, 0.0);
+  nh.param(ROOT_NAME + "/bounding_box/min_y", min_y_, 0.0);
+  nh.param(ROOT_NAME + "/bounding_box/max_y", max_y_, 0.0);
+  nh.param(ROOT_NAME + "/bounding_box/min_z", min_z_, 0.0);
+  nh.param(ROOT_NAME + "/bounding_box/max_z", max_z_, 0.0);
+  nh.param(ROOT_NAME + "/bounding_box/padding", bounding_box_padding, 0.1);
+
+  // Load other settings from yaml file
+  nh.getParam(ROOT_NAME + "/left_foot_name", left_foot_name);
+  nh.getParam(ROOT_NAME + "/right_foot_name", right_foot_name);
+  nh.getParam(ROOT_NAME + "/all_joints_group", all_joints_group);
+
   // Add padding to all limits just in case
-  const double vjoint_limit_padding = 0.1;
-  min_x_ += vjoint_limit_padding;
-  max_x_ += vjoint_limit_padding;
-  min_y_ += vjoint_limit_padding;
-  max_y_ += vjoint_limit_padding;
-  min_z_ += vjoint_limit_padding;
-  max_z_ += vjoint_limit_padding;
+  min_x_ += bounding_box_padding;
+  max_x_ += bounding_box_padding;
+  min_y_ += bounding_box_padding;
+  max_y_ += bounding_box_padding;
+  min_z_ += bounding_box_padding;
+  max_z_ += bounding_box_padding;
+
+  // Useful links to remember
+  left_foot_        = robot_state.getRobotModel()->getLinkModel(left_foot_name);
+  right_foot_       = robot_state.getRobotModel()->getLinkModel(right_foot_name);
+  all_joints_group_ = robot_state.getRobotModel()->getJointModelGroup(all_joints_group);
 
   // Get the offset between the foot and the torso to allow correct positioning of bounding box
+  // TODO: this assumes the fixed link never changes, which will eventually be a bad assumption
   moveit::core::RobotState temp_state(robot_state);
   temp_state.setToDefaultValues();
-  Eigen::Affine3d left_foot_to_torso = temp_state.getGlobalLinkTransform("LLEG_LINK5"); // TODO remove name
+  Eigen::Affine3d left_foot_to_torso = temp_state.getGlobalLinkTransform(left_foot_);
 
   // Move the x & y bounds over from foot frame of reference to torso frame of reference. z is always w.r.t. ground (0)
   max_x_ -= left_foot_to_torso.translation().x();
@@ -82,27 +100,41 @@ HumanoidStability::HumanoidStability(bool verbose, const moveit::core::RobotStat
   min_y_ -= left_foot_to_torso.translation().y();
 
   // Setup HRL Kinematics Balance Constraint
-  robot_joint_group_ = robot_state.getRobotModel()->getJointModelGroup("robot_joints"); // TODO remove name
-  //hrl_kinematics::Kinematics::FootSupport support_mode_ = hrl_kinematics::Kinematics::SUPPORT_DOUBLE;
 
-  // Preload map for less memory usage
-  for (std::size_t i = 0; i < robot_joint_group_->getVariableCount(); ++i)
+  //hrl_kinematics::Kinematics::FootSupport support_mode_ = hrl_kinematics::Kinematics::SUPPORT_DOUBLE;
+  support_mode_ = hrl_kinematics::Kinematics::SUPPORT_SINGLE_LEFT;
+
+  // Preload joint positions map for less memory usage
+  for (std::size_t i = 0; i < all_joints_group_->getVariableCount(); ++i)
   {
     // Intitialize empty
-    joint_positions_map_.insert(std::make_pair(robot_joint_group_->getJointModels()[i]->getName(), 0));
+    joint_positions_map_.insert(std::make_pair(all_joints_group_->getJointModels()[i]->getName(), 0));
   }
 
   // Error check
   if (!visual_tools_ && verbose_)
   {
-    ROS_ERROR_STREAM_NAMED("temp","No visual_tools passed in when in verbose mode, turning off verbose");
+    ROS_ERROR_STREAM_NAMED("stability","No visual_tools passed in when in verbose mode, turning off verbose");
     verbose_ = false;
   }
+
+  // Show bounding box
+  if (verbose_)
+    printVirtualJointExtremes();
+
+  ROS_INFO_STREAM_NAMED("stability","Humanoid Stability Checker ready.");
 }
 
 bool HumanoidStability::isValid(const robot_state::RobotState &robot_state, bool verbose)
 {
-  //verbose_ = verbose; // TODO - this should be enabled so we obey the planner
+  // Turn on verbose mode if planner requests it
+  if (verbose == true && verbose_ == false)
+  {
+    if (!visual_tools_)
+      ROS_ERROR_STREAM_NAMED("stability","No visual_tools passed in when in verbose mode, turning off verbose");
+    else
+      verbose_ = true;
+  }
 
   // Publish state
   if (verbose_)
@@ -115,7 +147,7 @@ bool HumanoidStability::isValid(const robot_state::RobotState &robot_state, bool
   if (!isApproximateValidBase(robot_state))
   {
     if (verbose_)
-      ROS_WARN_STREAM_NAMED("temp","Invalid because of approximate base location");
+      ROS_WARN_STREAM_NAMED("stability","Invalid because of approximate base location");
     return false;
   }
 
@@ -123,7 +155,7 @@ bool HumanoidStability::isValid(const robot_state::RobotState &robot_state, bool
   if (!isApproximateValidFoot(robot_state))
   {
     if (verbose_)
-      ROS_WARN_STREAM_NAMED("temp","Invalid because of approximate foot location");
+      ROS_WARN_STREAM_NAMED("stability","Invalid because of approximate foot location");
     return false;
   }
 
@@ -131,7 +163,7 @@ bool HumanoidStability::isValid(const robot_state::RobotState &robot_state, bool
   if (!isValidCOM(robot_state))
   {
     if (verbose_)
-      ROS_WARN_STREAM_NAMED("temp","Invalid because of COM");
+      ROS_WARN_STREAM_NAMED("stability","Invalid because of COM");
     return false;
   }
 
@@ -145,15 +177,16 @@ bool HumanoidStability::isApproximateValidBase(const robot_state::RobotState &ro
   const double* vjoint_positions = robot_state.getJointPositions(vjoint);
   if (verbose_)
   {
-    /*
+    if (false) // disabled
+    {
       std::cout << "Vjoint: " << std::endl;
       std::cout << "  X: " << boost::format("%8.4f") % min_x_ << boost::format("%8.4f") % vjoint_positions[0]
-      << boost::format("%8.4f") % max_x_ << std::endl;
+                << boost::format("%8.4f") % max_x_ << std::endl;
       std::cout << "  Y: " << boost::format("%8.4f") % min_y_ << boost::format("%8.4f") % vjoint_positions[1]
-      << boost::format("%8.4f") % max_y_ << std::endl;
+                << boost::format("%8.4f") % max_y_ << std::endl;
       std::cout << "  Z: " << boost::format("%8.4f") % min_z_ << boost::format("%8.4f") % vjoint_positions[2]
-      << boost::format("%8.4f") % max_z_ << std::endl;
-    */
+                << boost::format("%8.4f") % max_z_ << std::endl;
+    }
     visual_tools_->deleteAllMarkers();
     displayBoundingBox(robot_state.getFakeBaseTransform());
   }
@@ -172,9 +205,7 @@ bool HumanoidStability::isApproximateValidBase(const robot_state::RobotState &ro
 
 bool HumanoidStability::isApproximateValidFoot(const robot_state::RobotState &robot_state)
 {
-  const robot_model::LinkModel  *rfoot  = robot_state.getRobotModel()->getLinkModel("RLEG_LINK5"); // TODO move
-
-  if (robot_state.getGlobalLinkTransform(rfoot).translation().z() < 0)
+  if (robot_state.getGlobalLinkTransform(right_foot_).translation().z() < 0)
     return false;
 
   return true;
@@ -183,12 +214,13 @@ bool HumanoidStability::isApproximateValidFoot(const robot_state::RobotState &ro
 bool HumanoidStability::isValidCOM(const robot_state::RobotState &robot_state)
 {
   // Copy robot state to map
-  for (std::size_t i = 0; i < robot_joint_group_->getVariableCount(); ++i)
+  for (std::size_t i = 0; i < all_joints_group_->getVariableCount(); ++i)
   {
-    joint_positions_map_[robot_joint_group_->getJointModels()[i]->getName()] =
-      robot_state.getJointPositions(robot_joint_group_->getJointModels()[i])[0];
+    joint_positions_map_[all_joints_group_->getJointModels()[i]->getName()] =
+      robot_state.getJointPositions(all_joints_group_->getJointModels()[i])[0];
   }
 
+  // Run test
   bool stable = test_stability_.isPoseStable(joint_positions_map_, support_mode_, normal_vector_);
 
   bool show_com_makers = false;
@@ -218,10 +250,8 @@ bool HumanoidStability::isValidCOM(const robot_state::RobotState &robot_state)
     for (std::size_t i = 0; i < polygon_msg.polygon.points.size(); ++i)
     {
       Eigen::Affine3d temp_pose = moveit_visual_tools::VisualTools::convertPoint32ToPose(polygon_msg.polygon.points[i]);
-
-      //temp_pose.translation().z() = temp_pose.translation().z() - 0.1;
-      //robot_state.printTransform(robot_state.getGlobalLinkTransform("BODY"));
-      temp_pose = temp_pose * robot_state.getGlobalLinkTransform("BODY");
+      // TODO make this hard coded, but also fix this whole transforms thing cause it doesn't work right
+      temp_pose = temp_pose * robot_state.getGlobalLinkTransform("BODY"); 
 
       points.push_back( visual_tools_->convertPose(temp_pose).position );
     }
@@ -237,7 +267,7 @@ bool HumanoidStability::displayBoundingBox(const Eigen::Affine3d &translation) c
 {
   if (!visual_tools_)
   {
-    ROS_WARN_STREAM_NAMED("temp","visual tools not loaded");
+    ROS_WARN_STREAM_NAMED("stability","visual tools not loaded");
     return false;
   }
 

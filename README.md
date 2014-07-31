@@ -31,6 +31,8 @@ A yaml configuration file is required to load the settings for your robot. See c
 
 ## Limitations / Future Work
 
+ - Only supports standing on left foot
+ - Only supports fixed link remaining the same (never changes location or link)
  - Improve conversion of joint states from MoveIt! to KDL
  - Smartly check which foot/feet to check for stability
  - Remove assumptions about only being on one foot 

@@ -1,0 +1,13 @@
+humanoid_stability:
+  bounding_box:
+    min_x: -0.44564
+    max_x: 0.270967
+    min_y: -0.223091
+    max_y: 0.118065
+    min_z: 0.193524
+    max_z: 0.732025
+    padding: 0.1
+  left_foot_name: LLEG_LINK5
+  right_foot_name: RLEG_LINK5
+  # this MoveIt planning group does NOT contain any virtual joints but does have all fingers, feet, head, etc
+  all_joints_group: robot_joints  

@@ -69,10 +69,14 @@ private:
   double min_z_;
   double max_z_;
 
+  // Model semantics
+  const robot_model::LinkModel* left_foot_;
+  const robot_model::LinkModel* right_foot_;
+  const robot_model::JointModelGroup* all_joints_group_;
+
   // Stability checker
   hrl_kinematics::TestStability test_stability_;
   std::map<std::string, double> joint_positions_map_;
-  const robot_model::JointModelGroup* robot_joint_group_;
   hrl_kinematics::Kinematics::FootSupport support_mode_;
   tf::Vector3 normal_vector_;
 
