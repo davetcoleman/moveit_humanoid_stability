@@ -19,9 +19,9 @@ planning_scene_->setStateFeasibilityPredicate(humanoid_stability_->getStateFeasi
 
 Performs two course-grain checks and, if they pass, finally does full COM check:
 
- # Checks for a course-grain stability check by seeing if the torso is within a bounding box. This bound box is set in the yaml file and should be found through many iterations. A 0.1m expansion is added to the bounding box so that it over-accepts poses.
- # Checks if the other foot is above ground (z >= 0)
- # Checks if the COM is within the foot projection using hrl_kinematics
+ 1. Checks for a course-grain stability check by seeing if the torso is within a bounding box. This bound box is set in the yaml file and should be found through many iterations. A 0.1m expansion is added to the bounding box so that it over-accepts poses.
+ 2. Checks if the other foot is above ground (z >= 0)
+ 3. Checks if the COM is within the foot projection using hrl_kinematics
 
 It does not check for self collision or collision with environment, because that is accomplished by other components in MoveIt! automatically.
 
