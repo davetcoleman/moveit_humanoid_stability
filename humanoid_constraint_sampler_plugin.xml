@@ -1,0 +1,9 @@
+<library path="libhumanoid_moveit_constraint_sampler">
+
+  <class name="moveit_humanoid_stability/HumanoidConstraintSamplerAllocator" type="moveit_humanoid_stability::HumanoidConstraintSamplerAllocator" base_class_type="constraint_samplers::ConstraintSamplerAllocator">
+    <description>
+      Samples a whole body humanoid robot, starting with one leg
+    </description>
+  </class>
+
+</library>

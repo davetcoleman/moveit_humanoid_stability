@@ -1,21 +1,20 @@
 # MoveIt! Humanoid Stability
 
-Center of mass stability predicate for robots with one or more fixed feet based on KDL: center of mass, (static) stability, and support polygon computations.
+Libraries for sampling and validating a humanoid biped with one or more fixed feet for stability constraints in MoveIt! including:
 
-Mostly a simple wrapper for [hrl_kinematics](https://github.com/ahornung/hrl_kinematics).
+ - Fast stability heuristic checking
+ - Center of mass, static stability, and support polygon computations.
+ - Smart sampling of whole body positions using random number generation
+
+Provides a wrapper for [hrl_kinematics](https://github.com/ahornung/hrl_kinematics) that allows the center of mass stability testing for robots based on KDL.
 
 Developed by [Dave Coleman](http://dav.ee) and Shintaro Noda at JSK, University of Tokyo.
 
 <img align="right" src="https://raw.github.com/davetcoleman/moveit_humanoid_stability/hydro-devel/resources/screenshot.png" />
 
-## Usage
+## Usage and Explanation
 
-You can use this validator within a MoveIt! planning scene as a custom stability checker - see the function ``getStateFeasibilityFn()`` for use with a planning scene by calling:
-```
-planning_scene_->setStateFeasibilityPredicate(humanoid_stability_->getStateFeasibilityFn());
-```
-
-## Method
+### Balance Constraint Validator
 
 Performs two course-grain checks and, if they pass, finally does full COM check:
 
@@ -24,6 +23,25 @@ Performs two course-grain checks and, if they pass, finally does full COM check:
  3. Checks if the COM is within the foot projection using hrl_kinematics
 
 It does not check for self collision or collision with environment, because that is accomplished by other components in MoveIt! automatically.
+
+You can use the validator within a MoveIt! planning scene as a custom stability checker - see the function ``getStateFeasibilityFn()`` for use with a planning scene by calling:
+
+```
+planning_scene_->setStateFeasibilityPredicate(humanoid_stability_->getStateFeasibilityFn());
+```
+
+### State Sampling
+
+The sampler first samples the fixed leg, performs some quick checks, then samples the rest of the body and performs exact checks.
+
+You can use a custom constraint sampler plugin for MoveIt! by adding a "constraint_samplers" param to your move_group launch file, for example:
+
+```
+  <node name="hrp2jsknt_moveit_demos" pkg="hrp2jsknt_moveit_demos" type="hrp2_demos">
+    <rosparam command="load" file="$(find moveit_humanoid_stability)/config/hrp2jsknt_stability.yaml"/>
+    <param name="constraint_samplers" value="moveit_humanoid_stability/HumanoidConstraintSamplerAllocator"/>
+  </node>
+```
 
 ## Configuration
 
