@@ -51,6 +51,16 @@ You can use a custom constraint sampler plugin for MoveIt! by adding a "constrai
 
 A yaml configuration file is required to load the settings for your robot. See [config/hrp2jsknt_stability.yaml](https://github.com/davetcoleman/moveit_humanoid_stability/blob/hydro-devel/config/hrp2jsknt_stability.yaml)
 
+## Debug
+
+### Balance Constraint Validator
+
+N/A
+
+### State Sampling
+
+Rviz markers are available on topic ``/humanoid_constraint_sample_markers`` and the robot state is published on ``/humanoid_constraint_sample_robots``
+
 ## Limitations / Future Work
 
 ### Stability Validator 

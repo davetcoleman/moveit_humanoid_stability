@@ -45,70 +45,60 @@ namespace moveit_humanoid_stability
 {
 bool HumanoidConstraintSampler::configure(const moveit_msgs::Constraints &constr)
 {
-  moveit_msgs::Constraints constraints = constr; // copy to non-const
+  clear();
 
-  logError("%s: CONFIGURE HUMANOID CONSTRAINT SAMPLER", sampler_name_.c_str());
+  //moveit_msgs::Constraints constraints = constr; // copy to non-const
+
+  ROS_INFO_STREAM_NAMED("sampler","Configuring humanoid constraint sampler");
   //std::cout << "message:\n " << constr << std::endl;
 
   // Humanoid custom constraints: define here --------------------
   moveit_msgs::JointConstraint jc1;
-  moveit_msgs::OrientationConstraint oc1;
-
-  double workspace = 1;
-
-  // x axis orientation
-  oc1.link_name = "BODY";
-  oc1.header.frame_id = "BODY";
-  oc1.orientation.x = 0;
-  oc1.orientation.y = 0;
-  oc1.orientation.z = 0;
-  oc1.orientation.w = 1;
-  oc1.absolute_x_axis_tolerance = 0.001;
-  oc1.absolute_y_axis_tolerance = 0.001;
-  oc1.absolute_z_axis_tolerance = 0.001;
-  /*  TODO re-enable this
-      oc1.absolute_x_axis_tolerance = 0.34906585;  // 20 degrees
-      oc1.absolute_y_axis_tolerance = 0.34906585;
-      oc1.absolute_z_axis_tolerance = 0.34906585;
-  */
-  oc1.weight = 1;
-  constraints.orientation_constraints.push_back(oc1);
 
   // construct the joint constraints
   std::vector<kinematic_constraints::JointConstraint> jc;
-  for (std::size_t i = 0 ; i < constraints.joint_constraints.size() ; ++i)
+  for (std::size_t i = 0 ; i < constr.joint_constraints.size() ; ++i)
   {
     kinematic_constraints::JointConstraint j(scene_->getRobotModel());
-    if (j.configure(constraints.joint_constraints[i]))
+    if (j.configure(constr.joint_constraints[i]))
       jc.push_back(j);
   }
 
-  // construct the *single* orientation constraint
-  if (constraints.orientation_constraints.size() > 1)
+  // Load visual tools
+  if (verbose_)
   {
-    logError("This constraint sampler is only able to process one orientation constraint currently");
-  }
-  else if (constraints.orientation_constraints.size() == 1)
-  {
-    // Create our one orientation constraint
-    orientation_constraint_.reset(
-                                  new kinematic_constraints::OrientationConstraint(scene_->getRobotModel()));
-    orientation_constraint_->configure(constraints.orientation_constraints[0], scene_->getTransforms());
+    visual_tools_.reset(new moveit_visual_tools::VisualTools("/odom", "/humanoid_constraint_sample_markers", scene_->getRobotModel()));  
+    visual_tools_->loadRobotStatePub("/humanoid_constraint_sample_robots");
   }
 
-  // Load visual tools
-  visual_tools_.reset(new moveit_visual_tools::VisualTools("/odom", "/hrp2_visual_markers", scene_->getRobotModel()));  
-  visual_tools_->loadRobotStatePub("/hrp2_state_sampler");
-  
   // Configure stability checker
-  humanoid_stability_.reset(new moveit_humanoid_stability::HumanoidStability(verbose_, scene_->getCurrentState(), visual_tools_));
+  if (!humanoid_stability_)
+    humanoid_stability_.reset(new moveit_humanoid_stability::HumanoidStability(verbose_, scene_->getCurrentState(), visual_tools_));
 
   // Verbose mode text display setting
   text_pose_.position.x = scene_->getCurrentState().getFakeBaseTransform().translation().x();
   text_pose_.position.y = scene_->getCurrentState().getFakeBaseTransform().translation().y();
   text_pose_.position.z = scene_->getCurrentState().getFakeBaseTransform().translation().z() + 2;
 
-  return configureJoint(jc);
+  // If joint constriaints are provided, configure them. otherwise we will use regular random joint sampling
+  if (jc.empty())
+  {
+    sampler_name_ = "No_Joint_Constraints";
+    logDebug("No joint constraints passed to humanoid constraint sampler");
+    is_valid_ = true; // set as configured
+  }
+  else
+  {
+    sampler_name_ = "Has_Joint_Constraints";
+
+    if (!configureJoint(jc))
+      return false;
+
+    is_valid_ = true; // set as configured
+  }
+
+  logInform("%s: Humanoid Constraint Sampler initialized. Bounded: %d, Unbounded: %d", sampler_name_.c_str(), bounds_.size(), unbounded_.size());  
+  return true;
 }
 
 bool HumanoidConstraintSampler::configureJoint(const std::vector<kinematic_constraints::JointConstraint> &jc)
@@ -120,15 +110,6 @@ bool HumanoidConstraintSampler::configureJoint(const std::vector<kinematic_const
     logError("NULL planning group specified for constraint sampler");
     return false;
   }
-
-  if (jc.empty())
-  {
-    sampler_name_ = "NO_Joint_Constraints";
-    logError("No joint constraints passed to joint constraint sampler 2");
-    //return false;
-  }
-  else
-    sampler_name_ = "HAS_Joint_Constraints";
 
   // find and keep the constraints that operate on the group we sample
   // also keep bounds for joints for convenience
@@ -209,9 +190,7 @@ bool HumanoidConstraintSampler::configureJoint(const std::vector<kinematic_const
     }
 
   values_.resize(jmg_->getVariableCount());
-  is_valid_ = true;
 
-  logWarn("%s: finished configuring joint sampler. Bounded: %d, Unbounded: %d", sampler_name_.c_str(), bounds_.size(), unbounded_.size());
   return true;
 }
 
@@ -227,7 +206,7 @@ bool HumanoidConstraintSampler::sample(robot_state::RobotState &robot_state, con
     return false;
   }
 
-  logWarn("%s: HumanoidConstraintSampler SAMPLING -----------------------------",sampler_name_.c_str());
+  //logWarn("%s: HumanoidConstraintSampler SAMPLING -----------------------------",sampler_name_.c_str());
 
   //const robot_model::JointModel *vjoint = jmg_->getJointModel("virtual_joint");
   const robot_model::JointModel *vjoint = robot_state.getJointModel("virtual_joint");
@@ -264,7 +243,7 @@ bool HumanoidConstraintSampler::sample(robot_state::RobotState &robot_state, con
     }
     else if (bounds_.size() > 0)
     {
-      ROS_INFO_STREAM_NAMED("temp","Sampling joints using joint constraints");
+      ROS_INFO_STREAM_NAMED("sampler","Sampling joints using joint constraints");
       use_constraint_sampling = true;
 
       // Calculate random position of robot
@@ -288,18 +267,11 @@ bool HumanoidConstraintSampler::sample(robot_state::RobotState &robot_state, con
       robot_state.updateSingleChainWithFakeBase();
     }
 
-
-    if (verbose_)
-    {
-      visual_tools_->publishRobotState(robot_state);
-    }
-
-
     if (!humanoid_stability_->isApproximateValidBase(robot_state))
     {
       if (verbose_)
       {
-        ROS_WARN_STREAM_NAMED("temp","Sample outside VIRTUAL JOINT constraints");
+        ROS_WARN_STREAM_NAMED("sampler","Sample outside VIRTUAL JOINT constraints");
         visual_tools_->publishText(text_pose_, "OUTSIDE virtual joint bounding box", moveit_visual_tools::RED, moveit_visual_tools::LARGE);
         ros::Duration(1.1).sleep();
       }
@@ -332,7 +304,7 @@ bool HumanoidConstraintSampler::sample(robot_state::RobotState &robot_state, con
     {
       if (verbose_)
       {
-        ROS_WARN_STREAM_NAMED("temp","Sample outside RIGHT FOOT ground constraint ");
+        ROS_WARN_STREAM_NAMED("sampler","Sample outside RIGHT FOOT ground constraint ");
         visual_tools_->publishText(text_pose_, "OUTSIDE right foot ground constraint", moveit_visual_tools::RED, moveit_visual_tools::LARGE);
         ros::Duration(1.1).sleep();
       }
@@ -360,7 +332,7 @@ bool HumanoidConstraintSampler::sample(robot_state::RobotState &robot_state, con
     {
       if (verbose_)
       {
-        ROS_ERROR_STREAM_NAMED("temp","Pose not valid (self or enviornment collision)");
+        ROS_ERROR_STREAM_NAMED("sampler","Pose not valid (self or enviornment collision)");
         visual_tools_->publishText(text_pose_, "NOT valid from self or env collision", moveit_visual_tools::RED, moveit_visual_tools::LARGE);
         ros::Duration(1.1).sleep();
       }
@@ -383,12 +355,12 @@ bool HumanoidConstraintSampler::sample(robot_state::RobotState &robot_state, con
       ros::Duration(3.0).sleep();
     }
 
-    ROS_DEBUG_STREAM_NAMED("temp","Passed - valid sample found on attempts " << attempt);
+    ROS_DEBUG_STREAM_NAMED("sampler","Passed - valid sample found on attempts " << attempt);
 
     return true;
   } // for attempts
 
-  ROS_DEBUG_STREAM_NAMED("temp","Aborted - ran out of attempts (" << max_attempts << ")");
+  ROS_DEBUG_STREAM_NAMED("sampler","Aborted - ran out of attempts (" << max_attempts << ")");
 
   return false;
 }
@@ -425,45 +397,6 @@ bool HumanoidConstraintSampler::sampleJoints(robot_state::RobotState &robot_stat
   }
 
   robot_state.setJointGroupPositions(jmg_, values_);
-
-  return true;
-}
-
-// TODO remove
-bool HumanoidConstraintSampler::sampleOrientationConstraints(robot_state::RobotState &robot_state)
-{
-  if (!orientation_constraint_->enabled())
-  {
-    logWarn("Orientation constraint is not enabled, skipping");
-    return false;
-  }
-
-  Eigen::Quaterniond quat;
-
-  // sample a rotation matrix within the allowed bounds
-  double angle_x = 2.0 * (random_number_generator_.uniform01() - 0.5) * (orientation_constraint_->getXAxisTolerance()-std::numeric_limits<double>::epsilon());
-  double angle_y = 2.0 * (random_number_generator_.uniform01() - 0.5) * (orientation_constraint_->getYAxisTolerance()-std::numeric_limits<double>::epsilon());
-  double angle_z = 2.0 * (random_number_generator_.uniform01() - 0.5) * (orientation_constraint_->getZAxisTolerance()-std::numeric_limits<double>::epsilon());
-  Eigen::Affine3d diff(Eigen::AngleAxisd(angle_x, Eigen::Vector3d::UnitX())
-                       * Eigen::AngleAxisd(angle_y, Eigen::Vector3d::UnitY())
-                       * Eigen::AngleAxisd(angle_z, Eigen::Vector3d::UnitZ()));
-  Eigen::Affine3d reqr(orientation_constraint_->getDesiredRotationMatrix() * diff.rotation());
-  quat = Eigen::Quaterniond(reqr.rotation());
-
-  // if this constraint is with respect a mobile frame, we need to convert this rotation to the root frame of the model
-  if (orientation_constraint_->mobileReferenceFrame() && false) // TODO
-  {
-    logError("is mobile reference frame (?)");
-    const Eigen::Affine3d &t = robot_state.getFrameTransform(orientation_constraint_->getReferenceFrame());
-    Eigen::Affine3d rt(t.rotation() * quat.toRotationMatrix());
-    quat = Eigen::Quaterniond(rt.rotation());
-  }
-
-  // Now set the virtual joint quaternion to this result
-  robot_state.setVariablePosition("virtual_joint/rot_x", quat.x());
-  robot_state.setVariablePosition("virtual_joint/rot_y", quat.y());
-  robot_state.setVariablePosition("virtual_joint/rot_z", quat.x());
-  robot_state.setVariablePosition("virtual_joint/rot_w", quat.w());
 
   return true;
 }

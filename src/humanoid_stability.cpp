@@ -59,6 +59,7 @@ HumanoidStability::HumanoidStability(bool verbose, const moveit::core::RobotStat
   std::string left_foot_name = "left_foot";
   std::string right_foot_name = "right_foot";
   std::string all_joints_group = "robot_joints";
+  std::string base_link = robot_state.getRobotModel()->getRootLink()->getName();
 
   // Load the torso (vjoint) bounds from yaml file
   nh.param(ROOT_NAME + "/bounding_box/min_x", min_x_, 0.0);
@@ -122,7 +123,14 @@ HumanoidStability::HumanoidStability(bool verbose, const moveit::core::RobotStat
   if (verbose_)
     printVirtualJointExtremes();
 
-  ROS_INFO_STREAM_NAMED("stability","Humanoid Stability Checker ready.");
+  // Load hrl_kinematics
+  test_stability_.reset(new hrl_kinematics::TestStability(right_foot_name, // rfoot_mesh_link_name
+                                                          base_link, // root_link_name
+                                                          right_foot_name, left_foot_name, // rfoot, lfoot link name
+                                                          robot_state.getRobotModel()->getURDF()));
+
+
+  ROS_INFO_STREAM_NAMED("stability","Humanoid stability validator initialized.");
 }
 
 bool HumanoidStability::isValid(const robot_state::RobotState &robot_state, bool verbose)
@@ -221,14 +229,14 @@ bool HumanoidStability::isValidCOM(const robot_state::RobotState &robot_state)
   }
 
   // Run test
-  bool stable = test_stability_.isPoseStable(joint_positions_map_, support_mode_, normal_vector_);
+  bool stable = test_stability_->isPoseStable(joint_positions_map_, support_mode_, normal_vector_);
 
   bool show_com_makers = false;
 
   // Publish COM marker
   if (verbose_ && show_com_makers)
   {
-    visualization_msgs::Marker com_marker = test_stability_.getCOMMarker();
+    visualization_msgs::Marker com_marker = test_stability_->getCOMMarker();
     // Translate to world frame
     com_marker.pose =
       moveit_visual_tools::VisualTools::convertPose(moveit_visual_tools::VisualTools::convertPose(com_marker.pose) *
@@ -243,7 +251,7 @@ bool HumanoidStability::isValidCOM(const robot_state::RobotState &robot_state)
   // Publish footprint polygon
   if (verbose_ && show_com_makers)
   {
-    const geometry_msgs::PolygonStamped polygon_msg = test_stability_.getSupportPolygon();
+    const geometry_msgs::PolygonStamped polygon_msg = test_stability_->getSupportPolygon();
 
     // Change polygon points to world frame
     std::vector<geometry_msgs::Point> points;

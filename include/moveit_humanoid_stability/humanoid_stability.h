@@ -75,7 +75,7 @@ private:
   const robot_model::JointModelGroup* all_joints_group_;
 
   // Stability checker
-  hrl_kinematics::TestStability test_stability_;
+  hrl_kinematics::TestStabilityPtr test_stability_;
   std::map<std::string, double> joint_positions_map_;
   hrl_kinematics::Kinematics::FootSupport support_mode_;
   tf::Vector3 normal_vector_;

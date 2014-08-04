@@ -83,7 +83,6 @@ public:
                              const std::string &group_name)
     : ConstraintSampler(scene, group_name)
   {
-    logInform("constructing HumanoidConstraintSampler");
   }
 
   /**
@@ -136,8 +135,6 @@ public:
                       unsigned int max_attempts);
 
   bool sampleJoints(robot_state::RobotState &robot_state);
-
-  bool sampleOrientationConstraints(robot_state::RobotState &robot_state);
 
   virtual bool project(robot_state::RobotState &robot_state,
                        unsigned int max_attempts);
@@ -231,8 +228,6 @@ public:
   std::vector<double>                             values_; /**< \brief Values associated with this group to avoid continuously reallocating */
 
   std::string sampler_name_; // used for debugging
-
-  boost::shared_ptr<kinematic_constraints::OrientationConstraint> orientation_constraint_; /**< \brief Holds the orientation constraint for sampling */
 
   // Leg IK solvers
   //const robot_model::JointModelGroup* left_leg_;
