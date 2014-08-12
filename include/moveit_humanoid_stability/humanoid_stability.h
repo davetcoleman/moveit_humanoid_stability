@@ -72,6 +72,7 @@ private:
   // Model semantics
   const robot_model::LinkModel* left_foot_;
   const robot_model::LinkModel* right_foot_;
+  const robot_model::LinkModel* free_foot_; // opposite of fixed_foot, this is the foot that is in the air
   const robot_model::JointModelGroup* all_joints_group_;
 
   // Stability checker

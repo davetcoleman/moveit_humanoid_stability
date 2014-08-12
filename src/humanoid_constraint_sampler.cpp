@@ -96,6 +96,32 @@ bool HumanoidConstraintSampler::configure(const moveit_msgs::Constraints &constr
 
     is_valid_ = true; // set as configured
   }
+  
+  // Temporary vars for loading from param server
+  std::string whole_body_minus_left_leg = "whole_body_minus_left_leg";
+  std::string whole_body_minus_right_leg = "whole_body_minus_right_leg";
+  std::string left_leg  = "left_leg";
+  std::string right_leg = "right_leg";
+  std::string left_foot = "left_foot";
+  std::string right_foot = "right_foot";
+
+  // Load other settings from yaml file
+  static const std::string ROOT_NAME = "humanoid_stability";
+  ros::NodeHandle nh("~");
+  nh.getParam(ROOT_NAME + "/whole_body_minus_left_leg_name", whole_body_minus_left_leg);
+  nh.getParam(ROOT_NAME + "/whole_body_minus_right_leg_name", whole_body_minus_right_leg);
+  nh.getParam(ROOT_NAME + "/left_leg_name", left_leg);
+  nh.getParam(ROOT_NAME + "/right_leg_name", right_leg);
+  nh.getParam(ROOT_NAME + "/left_foot_name", left_foot);
+  nh.getParam(ROOT_NAME + "/right_foot_name", right_foot);
+
+  // Load the joint model groups and links
+  whole_body_minus_left_leg_  = scene_->getCurrentState().getRobotModel()->getJointModelGroup(whole_body_minus_left_leg);
+  whole_body_minus_right_leg_ = scene_->getCurrentState().getRobotModel()->getJointModelGroup(whole_body_minus_right_leg);
+  left_leg_                   = scene_->getCurrentState().getRobotModel()->getJointModelGroup(left_leg);
+  right_leg_                  = scene_->getCurrentState().getRobotModel()->getJointModelGroup(right_leg);
+  left_foot_                  = scene_->getCurrentState().getRobotModel()->getLinkModel(left_foot);
+  right_foot_                 = scene_->getCurrentState().getRobotModel()->getLinkModel(right_foot);
 
   logInform("%s: Humanoid Constraint Sampler initialized. Bounded: %d, Unbounded: %d", sampler_name_.c_str(), bounds_.size(), unbounded_.size());  
   return true;
@@ -208,12 +234,22 @@ bool HumanoidConstraintSampler::sample(robot_state::RobotState &robot_state, con
 
   //logWarn("%s: HumanoidConstraintSampler SAMPLING -----------------------------",sampler_name_.c_str());
 
-  //const robot_model::JointModel *vjoint = jmg_->getJointModel("virtual_joint");
-  const robot_model::JointModel *vjoint = robot_state.getJointModel("virtual_joint");
-  const robot_model::LinkModel  *rfoot  = jmg_->getLinkModel("RLEG_LINK5");
-  const robot_model::LinkModel  *lfoot  = jmg_->getLinkModel("LLEG_LINK5");
-  const robot_model::JointModelGroup *whole_body_minus_left_leg = robot_state.getRobotModel()->getJointModelGroup("whole_body_minus_left_leg");
-  const robot_model::JointModelGroup *left_leg = robot_state.getRobotModel()->getJointModelGroup("left_leg");
+
+
+  if (robot_state.getFixedFoot() == left_foot_)
+  {
+    whole_body_minus_fixed_leg_ = whole_body_minus_left_leg_;
+    fixed_leg_ = left_leg_;
+  }
+  else if (robot_state.getFixedFoot() == right_foot_)
+  {
+    whole_body_minus_fixed_leg_ = whole_body_minus_right_leg_;
+    fixed_leg_ = right_leg_;
+  }
+  else
+  {
+    ROS_ERROR_STREAM_NAMED("temp","Could not match a foot link with the chosen fixed on in RobotState. rosparam may be misconfigured to your URDF");
+  }
 
   max_attempts = 100000; // TODO this might be a bad hack
 
@@ -261,7 +297,7 @@ bool HumanoidConstraintSampler::sample(robot_state::RobotState &robot_state, con
     {
       //ROS_INFO_STREAM_NAMED("temp","Sampling joints using robot state random variables");
       // Generate random state for leg only
-      robot_state.setToRandomPositions(left_leg);
+      robot_state.setToRandomPositions(fixed_leg_);
 
       // Update only the virtual joint and the leg we just updated
       robot_state.updateSingleChainWithFakeBase();
@@ -290,7 +326,7 @@ bool HumanoidConstraintSampler::sample(robot_state::RobotState &robot_state, con
     if (!use_constraint_sampling)
     {
       // Generate remainder of body random state
-      robot_state.setToRandomPositions(whole_body_minus_left_leg);
+      robot_state.setToRandomPositions(whole_body_minus_fixed_leg_);
       robot_state.update(true); // update entire robot using previously computed virtual joint tranform
     }
 
@@ -299,13 +335,13 @@ bool HumanoidConstraintSampler::sample(robot_state::RobotState &robot_state, con
       visual_tools_->publishRobotState(robot_state);
     }
 
-    // Check if the right foot is above ground
+    // Check if the free foot is above ground
     if (!humanoid_stability_->isApproximateValidFoot(robot_state))
     {
       if (verbose_)
       {
-        ROS_WARN_STREAM_NAMED("sampler","Sample outside RIGHT FOOT ground constraint ");
-        visual_tools_->publishText(text_pose_, "OUTSIDE right foot ground constraint", moveit_visual_tools::RED, moveit_visual_tools::LARGE);
+        ROS_WARN_STREAM_NAMED("sampler","Sample outside FREE FOOT ground constraint ");
+        visual_tools_->publishText(text_pose_, "OUTSIDE free foot ground constraint", moveit_visual_tools::RED, moveit_visual_tools::LARGE);
         ros::Duration(1.1).sleep();
       }
 

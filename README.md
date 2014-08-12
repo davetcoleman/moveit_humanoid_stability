@@ -65,14 +65,12 @@ Rviz markers are available on topic ``/humanoid_constraint_sample_markers`` and 
 
 ### Stability Validator 
 
- - Only supports standing on left foot
+ - Only supports standing on left or right foot - needs dual feet support
  - Only supports fixed link remaining the same (never changes location or link)
  - Improve conversion of joint states from MoveIt! to KDL
  - Smartly check which foot/feet to check for stability
- - Remove assumptions about only being on one foot 
  - Improve other foot check for above ground to include all of mesh, not just the origin of the tip link of the leg
 
 ### Constraint Sampler
 
- - Remove HRP2JSK assumptions / hard-coded values
  - Cleanup code (currently research code)

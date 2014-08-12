@@ -1,13 +1,19 @@
 humanoid_stability:
   bounding_box:
     min_x: -0.44564
-    max_x: 0.270967
+    max_x: 0.44564
     min_y: -0.223091
-    max_y: 0.118065
+    max_y: 0.223091
     min_z: 0.193524
     max_z: 0.732025
     padding: 0.1
+  # Link names for the URDF
   left_foot_name: LLEG_LINK5
   right_foot_name: RLEG_LINK5
+  # Planning groups names from the SRDF
+  left_leg_name: left_leg
+  right_leg_name: right_leg  
+  whole_body_minus_left_leg_name: whole_body_minus_left_leg
+  whole_body_minus_right_leg_name: whole_body_minus_right_leg
   # this MoveIt planning group does NOT contain any virtual joints but does have all fingers, feet, head, etc
   all_joints_group: robot_joints  

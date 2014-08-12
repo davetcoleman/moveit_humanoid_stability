@@ -252,6 +252,18 @@ public:
 
   // Tool for checking balance
   moveit_humanoid_stability::HumanoidStabilityPtr humanoid_stability_;
+
+  // Properties of robot's standing stance
+  const robot_model::JointModelGroup *whole_body_minus_fixed_leg_;
+  const robot_model::JointModelGroup *fixed_leg_;
+  const robot_model::LinkModel* left_foot_;
+  const robot_model::LinkModel* right_foot_;
+  // Robot model properties
+  const robot_model::JointModelGroup *whole_body_minus_left_leg_;
+  const robot_model::JointModelGroup *whole_body_minus_right_leg_;
+  const robot_model::JointModelGroup *left_leg_;
+  const robot_model::JointModelGroup *right_leg_;
+
 };
 
 // define the sampler allocator plugin interface

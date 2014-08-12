@@ -102,8 +102,23 @@ HumanoidStability::HumanoidStability(bool verbose, const moveit::core::RobotStat
 
   // Setup HRL Kinematics Balance Constraint
 
+  // Choose which foot is fixed
+  if (robot_state.getFixedFoot() == left_foot_)
+  {
+    support_mode_ = hrl_kinematics::Kinematics::SUPPORT_SINGLE_LEFT;
+    free_foot_ = right_foot_;
+  }
+  else if (robot_state.getFixedFoot() == right_foot_)
+  {
+    support_mode_ = hrl_kinematics::Kinematics::SUPPORT_SINGLE_RIGHT;
+    free_foot_ = left_foot_;
+  }
+  else
+  {
+    ROS_ERROR_STREAM_NAMED("temp","Could not match a foot link with the chosen fixed on in RobotState. rosparam may be misconfigured to your URDF");
+  }
+  // TODO: allow both
   //hrl_kinematics::Kinematics::FootSupport support_mode_ = hrl_kinematics::Kinematics::SUPPORT_DOUBLE;
-  support_mode_ = hrl_kinematics::Kinematics::SUPPORT_SINGLE_LEFT;
 
   // Preload joint positions map for less memory usage
   for (std::size_t i = 0; i < all_joints_group_->getVariableCount(); ++i)
@@ -213,7 +228,7 @@ bool HumanoidStability::isApproximateValidBase(const robot_state::RobotState &ro
 
 bool HumanoidStability::isApproximateValidFoot(const robot_state::RobotState &robot_state)
 {
-  if (robot_state.getGlobalLinkTransform(right_foot_).translation().z() < 0)
+  if (robot_state.getGlobalLinkTransform(free_foot_).translation().z() < 0)
     return false;
 
   return true;
