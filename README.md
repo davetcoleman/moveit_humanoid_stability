@@ -11,10 +11,13 @@ Provides a wrapper for [hrl_kinematics](https://github.com/ahornung/hrl_kinemati
 Developed by [Dave Coleman](http://dav.ee) and Shintaro Noda at JSK, University of Tokyo.
 
 <img align="right" src="https://raw.github.com/davetcoleman/moveit_humanoid_stability/hydro-devel/resources/screenshot.png" />
+.
 
 ## Install
 
-Making this work on your machine will be fairly complicated until a long list of pending MoveIt! pull requests are accepted. See Dave Coleman for more details.
+This package requires an experimental branch of moveit_core be installed. It might be a while until it is merged into the main distribution. See [experimental_fake_base](https://github.com/davetcoleman/moveit_core/tree/experimental_fake_base)
+
+Overall, making this work on your machine will be fairly complicated until a long list of pending MoveIt! pull requests are accepted. See Dave Coleman for more details.
 
 ## Usage and Explanation
 
@@ -74,3 +77,4 @@ Rviz markers are available on topic ``/humanoid_constraint_sample_markers`` and 
 ### Constraint Sampler
 
  - Cleanup code (currently research code)
+ - Sample for dual legs, which is a closed chain, and probably requires an IK solver

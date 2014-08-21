@@ -56,6 +56,7 @@ HumanoidStability::HumanoidStability(bool verbose, const moveit::core::RobotStat
 
   // Temporary vars for loading from param server
   double bounding_box_padding;
+  double foot_polygon_scale;
   std::string left_foot_name = "left_foot";
   std::string right_foot_name = "right_foot";
   std::string all_joints_group = "robot_joints";
@@ -74,6 +75,7 @@ HumanoidStability::HumanoidStability(bool verbose, const moveit::core::RobotStat
   nh.getParam(ROOT_NAME + "/left_foot_name", left_foot_name);
   nh.getParam(ROOT_NAME + "/right_foot_name", right_foot_name);
   nh.getParam(ROOT_NAME + "/all_joints_group", all_joints_group);
+  nh.param(ROOT_NAME + "/foot_polygon_scale", foot_polygon_scale, 1.0);
 
   // Add padding to all limits just in case
   min_x_ += bounding_box_padding;
@@ -142,7 +144,8 @@ HumanoidStability::HumanoidStability(bool verbose, const moveit::core::RobotStat
   test_stability_.reset(new hrl_kinematics::TestStability(right_foot_name, // rfoot_mesh_link_name
                                                           base_link, // root_link_name
                                                           right_foot_name, left_foot_name, // rfoot, lfoot link name
-                                                          robot_state.getRobotModel()->getURDF()));
+                                                          robot_state.getRobotModel()->getURDF(),
+                                                          foot_polygon_scale));
 
 
   ROS_INFO_STREAM_NAMED("stability","Humanoid stability validator initialized.");

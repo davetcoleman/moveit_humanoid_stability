@@ -17,3 +17,5 @@ humanoid_stability:
   whole_body_minus_right_leg_name: whole_body_minus_right_leg
   # this MoveIt planning group does NOT contain any virtual joints but does have all fingers, feet, head, etc
   all_joints_group: robot_joints  
+  # convex hull scaling factor for stability checking foot polygon
+  foot_polygon_scale: 0.5
