@@ -1,4 +1,5 @@
 humanoid_stability:
+  # A heuristic for quickly determining the valid sampled area limits of a torso's virtual joint for stability checking
   bounding_box:
     min_x: -0.44564
     max_x: 0.44564
@@ -18,4 +19,4 @@ humanoid_stability:
   # this MoveIt planning group does NOT contain any virtual joints but does have all fingers, feet, head, etc
   all_joints_group: robot_joints  
   # convex hull scaling factor for stability checking foot polygon
-  foot_polygon_scale: 0.5
+  foot_polygon_scale: 0.9

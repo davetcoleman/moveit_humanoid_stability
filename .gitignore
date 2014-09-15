@@ -1,0 +1,39 @@
+# Compiled Object files
+*.slo
+*.lo
+*.o
+
+# Compiled Dynamic libraries
+*.so
+*.dylib
+
+# Compiled Static libraries
+*.lai
+*.la
+*.a
+
+# Python stuff
+*.pyc
+
+# Data files
+*.dat
+
+# Emacs temp files
+.#*
+*~
+
+# Silly OSX Files
+.DS_Store
+
+# CSV Files of Data
+*.csv
+
+# Catkin Workspace
+/CMakeLists.txt
+
+# Images
+*.png
+*.jpg
+
+# Catkin config
+CATKIN_IGNORE
