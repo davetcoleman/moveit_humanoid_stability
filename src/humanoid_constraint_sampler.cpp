@@ -69,16 +69,16 @@ bool HumanoidConstraintSampler::configure(const moveit_msgs::Constraints &constr
   {
     visual_tools_.reset(new moveit_visual_tools::VisualTools("/odom", "/humanoid_constraint_sample_markers", scene_->getRobotModel()));  
     visual_tools_->loadRobotStatePub("/humanoid_constraint_sample_robots");
+
+    // Verbose mode text display setting
+    text_pose_.position.x = scene_->getCurrentState().getFakeBaseTransform().translation().x();
+    text_pose_.position.y = scene_->getCurrentState().getFakeBaseTransform().translation().y();
+    text_pose_.position.z = scene_->getCurrentState().getFakeBaseTransform().translation().z() + 2;
   }
 
   // Configure stability checker
   if (!humanoid_stability_)
     humanoid_stability_.reset(new moveit_humanoid_stability::HumanoidStability(verbose_, scene_->getCurrentState(), visual_tools_));
-
-  // Verbose mode text display setting
-  text_pose_.position.x = scene_->getCurrentState().getFakeBaseTransform().translation().x();
-  text_pose_.position.y = scene_->getCurrentState().getFakeBaseTransform().translation().y();
-  text_pose_.position.z = scene_->getCurrentState().getFakeBaseTransform().translation().z() + 2;
 
   // If joint constriaints are provided, configure them. otherwise we will use regular random joint sampling
   if (jc.empty())

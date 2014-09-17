@@ -159,12 +159,16 @@ bool HumanoidStability::isValid(const robot_state::RobotState &robot_state, bool
     if (!visual_tools_)
       ROS_ERROR_STREAM_NAMED("stability","No visual_tools passed in when in verbose mode, turning off verbose");
     else
-      verbose_ = true;
+    {
+      ROS_ERROR_STREAM_NAMED("temp","Verbose mode forced on but IGNORED");
+      //verbose_ = true; // TODO
+    }
   }
 
   // Publish state
   if (verbose_)
   {
+    std::cout << "publishing robot state in HumanoidStability::isValid() zebra" << std::endl;
     visual_tools_->publishRobotState(robot_state);
     ros::Duration(0.25).sleep();
   }
