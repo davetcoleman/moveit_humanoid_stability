@@ -105,6 +105,11 @@ public:
   virtual bool configure(const moveit_msgs::Constraints &constr);
 
   /**
+   * \brief Helper for setting up the visualizer in Rviz
+   */
+  void loadVisualTools();
+
+  /**
    * \brief Configures a joint constraint given a vector of constraints.
    *
    * If more than one constraint for a particular joint is specified,

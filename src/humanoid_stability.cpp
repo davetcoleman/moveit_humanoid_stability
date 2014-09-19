@@ -168,7 +168,6 @@ bool HumanoidStability::isValid(const robot_state::RobotState &robot_state, bool
   // Publish state
   if (verbose_)
   {
-    std::cout << "publishing robot state in HumanoidStability::isValid() zebra" << std::endl;
     visual_tools_->publishRobotState(robot_state);
     ros::Duration(0.25).sleep();
   }
@@ -217,6 +216,9 @@ bool HumanoidStability::isApproximateValidBase(const robot_state::RobotState &ro
       std::cout << "  Z: " << boost::format("%8.4f") % min_z_ << boost::format("%8.4f") % vjoint_positions[2]
                 << boost::format("%8.4f") % max_z_ << std::endl;
     }
+
+    if (!visual_tools_)
+      ROS_ERROR_STREAM_NAMED("temp","Caught that error");
     visual_tools_->deleteAllMarkers();
     displayBoundingBox(robot_state.getFakeBaseTransform());
   }

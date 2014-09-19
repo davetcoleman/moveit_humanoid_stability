@@ -65,15 +65,9 @@ bool HumanoidConstraintSampler::configure(const moveit_msgs::Constraints &constr
   }
 
   // Load visual tools
-  if (verbose_)
+  if (verbose_ || true) // i don't know how to make this any better :-/
   {
-    visual_tools_.reset(new moveit_visual_tools::VisualTools("/odom", "/humanoid_constraint_sample_markers", scene_->getRobotModel()));  
-    visual_tools_->loadRobotStatePub("/humanoid_constraint_sample_robots");
-
-    // Verbose mode text display setting
-    text_pose_.position.x = scene_->getCurrentState().getFakeBaseTransform().translation().x();
-    text_pose_.position.y = scene_->getCurrentState().getFakeBaseTransform().translation().y();
-    text_pose_.position.z = scene_->getCurrentState().getFakeBaseTransform().translation().z() + 2;
+    loadVisualTools();
   }
 
   // Configure stability checker
@@ -126,6 +120,22 @@ bool HumanoidConstraintSampler::configure(const moveit_msgs::Constraints &constr
   logInform("%s: Humanoid Constraint Sampler initialized. Bounded: %d, Unbounded: %d", sampler_name_.c_str(), bounds_.size(), unbounded_.size());  
   return true;
 }
+
+void HumanoidConstraintSampler::loadVisualTools()
+{
+  // Don't load twice
+  if (visual_tools_ != NULL)
+    return;
+
+  visual_tools_.reset(new moveit_visual_tools::VisualTools("/odom", "/humanoid_constraint_sample_markers", scene_->getRobotModel()));  
+  visual_tools_->loadRobotStatePub("/humanoid_constraint_sample_robots");
+
+  // Verbose mode text display setting
+  text_pose_.position.x = scene_->getCurrentState().getFakeBaseTransform().translation().x();
+  text_pose_.position.y = scene_->getCurrentState().getFakeBaseTransform().translation().y();
+  text_pose_.position.z = scene_->getCurrentState().getFakeBaseTransform().translation().z() + 2;
+}
+
 
 bool HumanoidConstraintSampler::configureJoint(const std::vector<kinematic_constraints::JointConstraint> &jc)
 {
@@ -454,6 +464,12 @@ void HumanoidConstraintSampler::clear()
 
 void HumanoidConstraintSampler::setVerbose(bool verbose)
 {
+  // Load visual tools
+  if (verbose)
+  {
+    loadVisualTools();
+  }
+
   humanoid_stability_->setVerbose(verbose);
 }
 
