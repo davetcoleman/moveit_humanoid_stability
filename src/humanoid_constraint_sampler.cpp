@@ -49,7 +49,7 @@ bool HumanoidConstraintSampler::configure(const moveit_msgs::Constraints &constr
 
   //moveit_msgs::Constraints constraints = constr; // copy to non-const
 
-  ROS_INFO_STREAM_NAMED("sampler","Configuring humanoid constraint sampler");
+  ROS_DEBUG_STREAM_NAMED("sampler","Configuring humanoid constraint sampler");
   //std::cout << "message:\n " << constr << std::endl;
 
   // Humanoid custom constraints: define here --------------------
@@ -289,7 +289,8 @@ bool HumanoidConstraintSampler::sample(robot_state::RobotState &robot_state, con
     }
     else if (bounds_.size() > 0)
     {
-      ROS_INFO_STREAM_NAMED("sampler","Sampling joints using joint constraints");
+      if (verbose_)
+        ROS_INFO_STREAM_NAMED("sampler","Sampling joints using joint constraints");
       use_constraint_sampling = true;
 
       // Calculate random position of robot

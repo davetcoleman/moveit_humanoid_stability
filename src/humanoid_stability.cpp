@@ -160,7 +160,7 @@ bool HumanoidStability::isValid(const robot_state::RobotState &robot_state, bool
       ROS_ERROR_STREAM_NAMED("stability","No visual_tools passed in when in verbose mode, turning off verbose");
     else
     {
-      ROS_ERROR_STREAM_NAMED("temp","Verbose mode forced on but IGNORED");
+      ROS_WARN_STREAM_NAMED("temp","Verbose mode forced on but IGNORED");
       //verbose_ = true; // TODO
     }
   }
