@@ -43,7 +43,7 @@
 #include <ros/ros.h>
 
 // Helper for Rviz
-#include <moveit_visual_tools/visual_tools.h>
+#include <moveit_visual_tools/moveit_visual_tools.h>
 
 // Humanoid balance constraint tester
 #include <hrl_kinematics/TestStability.h>
@@ -59,7 +59,7 @@ private:
   bool verbose_;
 
   // For visualizing things in rviz
-  moveit_visual_tools::VisualToolsPtr visual_tools_;
+  moveit_visual_tools::MoveItVisualToolsPtr visual_tools_;
 
   // Bounds for estimating virtual joint contraint
   double min_x_;
@@ -90,7 +90,7 @@ public:
    * \param visual_tools - shared visual tools ptr for debugging (optional)
    */
   HumanoidStability(bool verbose, const moveit::core::RobotState &robot_state, 
-                    const moveit_visual_tools::VisualToolsPtr &visual_tools = moveit_visual_tools::VisualToolsPtr());
+                    const moveit_visual_tools::MoveItVisualToolsPtr &visual_tools = moveit_visual_tools::MoveItVisualToolsPtr());
 
   /**
    * \brief Destructor

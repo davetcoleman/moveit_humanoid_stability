@@ -42,7 +42,7 @@ namespace moveit_humanoid_stability
 {
 
 HumanoidStability::HumanoidStability(bool verbose, const moveit::core::RobotState &robot_state,
-                                     const moveit_visual_tools::VisualToolsPtr &visual_tools)
+                                     const moveit_visual_tools::MoveItVisualToolsPtr &visual_tools)
   : verbose_(verbose)
   , visual_tools_(visual_tools)
   , normal_vector_(0.0, 0.0, 1.0)
@@ -263,7 +263,7 @@ bool HumanoidStability::isValidCOM(const robot_state::RobotState &robot_state)
     visualization_msgs::Marker com_marker = test_stability_->getCOMMarker();
     // Translate to world frame
     com_marker.pose =
-      moveit_visual_tools::VisualTools::convertPose(moveit_visual_tools::VisualTools::convertPose(com_marker.pose) *
+      moveit_visual_tools::MoveItVisualTools::convertPose(moveit_visual_tools::MoveItVisualTools::convertPose(com_marker.pose) *
                                                     robot_state.getGlobalLinkTransform(com_marker.header.frame_id));
 
     // Change frame name to world fame
@@ -281,7 +281,7 @@ bool HumanoidStability::isValidCOM(const robot_state::RobotState &robot_state)
     std::vector<geometry_msgs::Point> points;
     for (std::size_t i = 0; i < polygon_msg.polygon.points.size(); ++i)
     {
-      Eigen::Affine3d temp_pose = moveit_visual_tools::VisualTools::convertPoint32ToPose(polygon_msg.polygon.points[i]);
+      Eigen::Affine3d temp_pose = moveit_visual_tools::MoveItVisualTools::convertPoint32ToPose(polygon_msg.polygon.points[i]);
       // TODO make this hard coded, but also fix this whole transforms thing cause it doesn't work right
       temp_pose = temp_pose * robot_state.getGlobalLinkTransform("BODY"); 
 
@@ -312,7 +312,7 @@ bool HumanoidStability::displayBoundingBox(const Eigen::Affine3d &translation) c
   point2.y = min_y_ + translation.translation().y();
   point2.z = min_z_ + translation.translation().z();
 
-  return visual_tools_->publishRectangle(point1, point2, moveit_visual_tools::TRANSLUCENT);
+  return visual_tools_->publishRectangle(point1, point2, rviz_visual_tools::TRANSLUCENT);
 }
 
 void HumanoidStability::printVirtualJointExtremes() const

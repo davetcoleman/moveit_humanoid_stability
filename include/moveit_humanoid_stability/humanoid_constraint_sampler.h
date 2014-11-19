@@ -51,7 +51,7 @@
 #include <moveit_humanoid_stability/humanoid_stability.h>
 
 // Helper for Rviz
-#include <moveit_visual_tools/visual_tools.h>
+#include <moveit_visual_tools/moveit_visual_tools.h>
 
 namespace moveit_humanoid_stability
 {
@@ -253,7 +253,7 @@ public:
   geometry_msgs::Pose text_pose_;
 
   // For visualizing things in rviz
-  moveit_visual_tools::VisualToolsPtr visual_tools_;
+  moveit_visual_tools::MoveItVisualToolsPtr visual_tools_;
 
   // Tool for checking balance
   moveit_humanoid_stability::HumanoidStabilityPtr humanoid_stability_;

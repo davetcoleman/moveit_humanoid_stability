@@ -127,7 +127,7 @@ void HumanoidConstraintSampler::loadVisualTools()
   if (visual_tools_ != NULL)
     return;
 
-  visual_tools_.reset(new moveit_visual_tools::VisualTools("/odom", "/humanoid_constraint_sample_markers", scene_->getRobotModel()));  
+  visual_tools_.reset(new moveit_visual_tools::MoveItVisualTools("/odom", "/humanoid_constraint_sample_markers", scene_->getRobotModel()));  
   visual_tools_->loadRobotStatePub("/humanoid_constraint_sample_robots");
 
   // Verbose mode text display setting
@@ -319,7 +319,7 @@ bool HumanoidConstraintSampler::sample(robot_state::RobotState &robot_state, con
       if (verbose_)
       {
         ROS_WARN_STREAM_NAMED("sampler","Sample outside VIRTUAL JOINT constraints");
-        visual_tools_->publishText(text_pose_, "OUTSIDE virtual joint bounding box", moveit_visual_tools::RED, moveit_visual_tools::LARGE);
+        visual_tools_->publishText(text_pose_, "OUTSIDE virtual joint bounding box", rviz_visual_tools::RED, rviz_visual_tools::LARGE);
         ros::Duration(1.1).sleep();
       }
 
@@ -329,7 +329,7 @@ bool HumanoidConstraintSampler::sample(robot_state::RobotState &robot_state, con
     // Is Valid
     if (verbose_)
     {
-      visual_tools_->publishText(text_pose_, "Within virtual joint bounding box", moveit_visual_tools::WHITE, moveit_visual_tools::LARGE);
+      visual_tools_->publishText(text_pose_, "Within virtual joint bounding box", rviz_visual_tools::WHITE, rviz_visual_tools::LARGE);
       visual_tools_->publishRobotState(robot_state);
       ros::Duration(1.1).sleep();
     }
@@ -352,7 +352,7 @@ bool HumanoidConstraintSampler::sample(robot_state::RobotState &robot_state, con
       if (verbose_)
       {
         ROS_WARN_STREAM_NAMED("sampler","Sample outside FREE FOOT ground constraint ");
-        visual_tools_->publishText(text_pose_, "OUTSIDE free foot ground constraint", moveit_visual_tools::RED, moveit_visual_tools::LARGE);
+        visual_tools_->publishText(text_pose_, "OUTSIDE free foot ground constraint", rviz_visual_tools::RED, rviz_visual_tools::LARGE);
         ros::Duration(1.1).sleep();
       }
 
@@ -365,7 +365,7 @@ bool HumanoidConstraintSampler::sample(robot_state::RobotState &robot_state, con
       if (verbose_)
       {
         ROS_WARN("Pose is NOT stable");
-        visual_tools_->publishText(text_pose_, "NOT stable from center of mass", moveit_visual_tools::RED, moveit_visual_tools::LARGE);
+        visual_tools_->publishText(text_pose_, "NOT stable from center of mass", rviz_visual_tools::RED, rviz_visual_tools::LARGE);
         ros::Duration(1.1).sleep();
       }
       continue;
@@ -380,7 +380,7 @@ bool HumanoidConstraintSampler::sample(robot_state::RobotState &robot_state, con
       if (verbose_)
       {
         ROS_ERROR_STREAM_NAMED("sampler","Pose not valid (self or enviornment collision)");
-        visual_tools_->publishText(text_pose_, "NOT valid from self or env collision", moveit_visual_tools::RED, moveit_visual_tools::LARGE);
+        visual_tools_->publishText(text_pose_, "NOT valid from self or env collision", rviz_visual_tools::RED, rviz_visual_tools::LARGE);
         ros::Duration(1.1).sleep();
       }
       continue;
@@ -398,7 +398,7 @@ bool HumanoidConstraintSampler::sample(robot_state::RobotState &robot_state, con
 
     if (verbose_)
     {
-      visual_tools_->publishText(text_pose_, "Sample VALID!", moveit_visual_tools::WHITE, moveit_visual_tools::LARGE);
+      visual_tools_->publishText(text_pose_, "Sample VALID!", rviz_visual_tools::WHITE, rviz_visual_tools::LARGE);
       ros::Duration(3.0).sleep();
     }
 
